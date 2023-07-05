@@ -1,7 +1,7 @@
 import sys
 import csv
 import copy
-from numpy import random
+import numpy as np
 
 def printMat(mat):
     print('======================')
@@ -23,6 +23,11 @@ def extrartMap(filename):
 
             terrainMap.append(rowList)
     return terrainMap
+
+def exportMap(terrainMap,filename):
+    npArray = np.array(terrainMap)
+    np.savetxt(filename,npArray,fmt='%1.10f', delimiter=';')
+    
 
 def createPositionMap(terrainMap=[]):
     n = len(terrainMap)
@@ -137,8 +142,8 @@ def GRASP(terrainMap,numberSensors,radius,alpha,limit):
     currentTerrainMap = copy.deepcopy(terrainMap)
     positionMap = createPositionMap(currentTerrainMap)
     while(numberSensorsUse < numberSensors and currentRun < limit ):
-        row = random.randint(0,len(currentTerrainMap))
-        column = random.randint(0,len(currentTerrainMap))
+        row = np.random.randint(0,len(currentTerrainMap))
+        column = np.random.randint(0,len(currentTerrainMap))
 
         subMatrix = getSubMatrix(currentTerrainMap,(row,column),radius)
         subMatrixSum = getMatrixSum(subMatrix)
@@ -164,7 +169,9 @@ def main():
     bestPositionMap=[]
     bestMap=[]
 
+    midtarm =[]
     terrainMap = extrartMap(filename)
+
     for i in range(10000):
         (coeficiente,positionMap,currentTerrainMap) = GRASP(terrainMap,numberSensors,radius,alpha,limit)
 
@@ -173,10 +180,14 @@ def main():
             bestPositionMap = copy.deepcopy(positionMap)
             bestMap = copy.deepcopy(currentTerrainMap)
         if(i % 1000 ==0):
-            print(str(i/1000)+"%")
+            midtarm.append(bestCoeficiente)
+            print(str(i/100)+"%")
     printMat(bestPositionMap)
     printMat(bestMap)
     print(bestCoeficiente)
+    print(midtarm)
+    exportMap(bestMap,'bestmap.csv')
+    exportMap(midtarm,'midtarm.csv')
     
 
     
