@@ -80,6 +80,16 @@ def getBottomLeftPositionMatrix(lenMatrix,centerPosition,radius):
 
     return(newRow,newColumn)
 
+def getSubMatrixPosition(originalMatrix,radius):
+    row = np.random.randint(radius,len(originalMatrix)-radius)
+    column = np.random.randint(radius,len(originalMatrix)-radius)
+    centerPosition = (row,column)
+
+    upperLeftPosition = getUpperLeftPositionMatrix(centerPosition, radius)
+    bottomRightPosition = getBottomRightPositionMatrix(len(originalMatrix), centerPosition, radius)
+    
+
+
 def getSubMatrix(terrainMap,centerPosition,radius):
     try:
         lenMatrix = len(terrainMap)
