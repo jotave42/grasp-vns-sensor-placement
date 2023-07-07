@@ -203,7 +203,6 @@ class Main:
             if ( positionRow >= upperRow ) and ( positionRow <= bottomRow ):
                 if (positionColumn >= leftColumn) and (positionColumn <= rightColumn):
                     return True
-
         
         return collided
 
@@ -223,6 +222,7 @@ class Main:
         currentTerrainMap = copy.deepcopy(terrainMap)
         positionMap = self.createPositionMap(currentTerrainMap)
         while(numberSensorsUse < numberSensors and currentRun < limit ):
+ 
             row = self.getRandomNumber(0,len(currentTerrainMap))
             column = self.getRandomNumber(0,len(currentTerrainMap))
 
@@ -234,6 +234,7 @@ class Main:
                 numberSensorsUse += 1
             
             currentRun+=1
+        
         sumMap = self.getMatrixSum(currentTerrainMap)
         if numberSensorsUse == 0:
             return self.GRASP(terrainMap,numberSensors,radius,alpha,limit)
@@ -289,8 +290,23 @@ class Main:
         return newPositionMap
 
 
+    def checkMaxSensors(self,positionMap,numberSensors):
+        sensosrsPosition =[]
+        lenPosition = len(positionMap)
+        for row in range(lenPosition):
+            for column in range(lenPosition):
+                if( positionMap[row][column] == 1):
+                    sensosrsPosition.append((row,column))
 
-    def VNS(self,positionMap,coefficient,originalMap,radius):
+        while len(sensosrsPosition) > numberSensors:
+            index = self.getRandomNumber(0, len(sensosrsPosition))
+            (row,column) = sensosrsPosition.pop(index)
+            positionMap[row][column] = 0
+        
+        return positionMap
+
+
+    def VNS(self,positionMap,coefficient,originalMap,radius,numberSensors):
         
         currentTerrainMap = copy.deepcopy(originalMap)
         currentPositionMap = copy.deepcopy(positionMap)
@@ -301,10 +317,14 @@ class Main:
         k = 0
         while k <= 1:
             shakedPositionMap = heuristics[k](currentPositionMap,radius)
-            newPositionMap = heuristics[k](shakedPositionMap,radius)
+            shakedPositionMap = self.checkMaxSensors(shakedPositionMap,numberSensors)
 
+            newPositionMap = heuristics[k](shakedPositionMap,radius)
+            newPositionMap = self.checkMaxSensors(newPositionMap,numberSensors)
+          
             currentTerrainMap = copy.deepcopy(originalMap)
             (currentTerrainMap,numberSensorsUse) = self.markPositionsInAMatrix(newPositionMap,currentTerrainMap,radius)
+      
 
             sumMap = self.getMatrixSum(currentTerrainMap)
             newCoefficient = sumMap/numberSensorsUse
@@ -316,9 +336,62 @@ class Main:
                 k = 0
             else:
                 k += 1
+
         return (coefficient, bestPositionMap, bestTerrainMap)
 
     
+    def getAlha(self,terreinMatrix,radius):
+        distance = (radius*2 )+ 1
+        lenMatrix = len(terreinMatrix)
+        workTerreinMatrix = copy.deepcopy(terreinMatrix)
+        row = radius
+        column = radius
+        sumList = []
+        lastRow = False
+
+        while (  lastRow == False and row  < lenMatrix ):
+            subMatrix = self.getSubMatrix(workTerreinMatrix,(row,column),radius)
+            sumSubMatrix = self.getMatrixSum(subMatrix)
+
+            self.resetSubMatrix(workTerreinMatrix,(row,column),radius)
+
+            sumList.append(sumSubMatrix)
+            column += distance 
+
+            if(column >= lenMatrix):
+                if(row >= lenMatrix and column >= lenMatrix ):
+                    continue
+                column = lenMatrix-1
+                subMatrix = self.getSubMatrix(workTerreinMatrix,(row,column),radius)
+                sumSubMatrix = self.getMatrixSum(subMatrix)
+                self.resetSubMatrix(workTerreinMatrix,(row,column),radius)
+                sumSubMatrix 
+                sumList.append(sumSubMatrix)
+                column = radius
+                row += distance
+                if (row >= (lenMatrix-1)  and lastRow == False):
+                    if(row >= lenMatrix):
+                        row = lenMatrix - 1
+                    lastRow =True    
+        
+        totalSum = 0
+        for sumItem in sumList:
+            totalSum += sumItem
+
+        lenSumList = len(sumList)
+        avgSum = totalSum/lenSumList  
+        variance = 0
+        for sumItem in sumList:
+            variance += ( (avgSum - sumItem) ** 2)/lenSumList 
+        
+        standardDeviation = math.sqrt(variance)
+        
+        return avgSum - standardDeviation
+            
+                
+
+
+            
 
 
     def main(self):
@@ -326,23 +399,34 @@ class Main:
         filename = argv[1]
         numberSensors = int(argv[2])
         radius = int(argv[3])
-        alpha = 2
-        limit = 40 
+      
+        limit = 1000 
         bestCoefficient=10000000
         bestPositionMap=[]
         bestMap=[]
 
         midtarm =[]
         terrainMap = self.extrartMap(filename)
-
+        
+        alpha = self.getAlha(terrainMap,radius)
+        print("alpha",alpha)
         for i in range(10000):
-            seed = round(time()*10000)
+            secound=self.getRandomNumber(0,round(time()))
+            seed = round(time()*10000)+secound
             self.randomFunction = Generator(PCG64(seed))
             (coefficient,positionMap,currentTerrainMap) = self.GRASP(terrainMap,numberSensors,radius,alpha,limit)
 
-            (coefficient,positionMap,currentTerrainMap) = self.VNS(positionMap,coefficient,terrainMap,radius)
+            (coefficientVNS,positionMapVNS,currentTerrainMapVNS) = self.VNS(positionMap,coefficient,terrainMap,radius,numberSensors)
 
+            if(coefficientVNS < coefficient):
+                coefficient = coefficientVNS
+                positionMap = positionMapVNS 
+                currentTerrainMap = currentTerrainMapVNS
+            if(i % 100 ==0):
+                print("currentCoefficient",coefficient)
             if(bestCoefficient>coefficient):
+                print("oldCoefficient",bestCoefficient)
+                print("coefficient",coefficient)
                 bestCoefficient = coefficient
                 bestPositionMap = copy.deepcopy(positionMap)
                 bestMap = copy.deepcopy(currentTerrainMap)
