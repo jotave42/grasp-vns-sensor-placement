@@ -4,6 +4,7 @@ import copy
 import numpy as np
 from numpy.random import Generator, PCG64
 from time import time
+import math
 class Main:
 
     def __init__(self):
@@ -16,8 +17,8 @@ class Main:
         print('======================')
 
     def getRandomNumber(self,init:int, end:int ):
-        
-        return self.randomFunction.integers(init,end)
+        initScale = init/end
+        return  math.floor( self.randomFunction.uniform(initScale,1) * end)
 
     def extrartMap(self, filename):
         terrainMap =[]
