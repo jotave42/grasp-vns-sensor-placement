@@ -216,12 +216,12 @@ class Main:
 
         return (subMatrix1,subMatrix2)
 
-    def GRASP(self,terrainMap,numberSensors,radius,alpha,limit):
-        numberSensorsUse = 0
+    def GRASP(self,terrainMap,sensorsNumber,radius,alpha,limit):
+        sensorsNumberUse = 0
         currentRun = 0
         currentTerrainMap = copy.deepcopy(terrainMap)
         positionMap = self.createPositionMap(currentTerrainMap)
-        while(numberSensorsUse < numberSensors and currentRun < limit ):
+        while(sensorsNumberUse < sensorsNumber and currentRun < limit ):
  
             row = self.getRandomNumber(0,len(currentTerrainMap))
             column = self.getRandomNumber(0,len(currentTerrainMap))
@@ -231,14 +231,14 @@ class Main:
 
             if ( subMatrixSum >= alpha ):
                 self.markPosition(positionMap,currentTerrainMap,(row,column),radius)
-                numberSensorsUse += 1
+                sensorsNumberUse += 1
             
             currentRun+=1
         
         sumMap = self.getMatrixSum(currentTerrainMap)
-        if numberSensorsUse == 0:
-            return self.GRASP(terrainMap,numberSensors,radius,alpha,limit)
-        coefficient = sumMap/numberSensorsUse
+        if sensorsNumberUse == 0:
+            return self.GRASP(terrainMap,sensorsNumber,radius,alpha,limit)
+        coefficient = sumMap/sensorsNumberUse
         
 
         return (coefficient,positionMap,currentTerrainMap)
@@ -268,15 +268,15 @@ class Main:
 
     def markPositionsInAMatrix(self,positionMap,terrainMap,radius):
         lenMatrix = len(positionMap)
-        numberSensorsUse = 0
+        sensorsNumberUse = 0
 
         for row in range(lenMatrix):
             for column in range(lenMatrix):
                 if(positionMap[row][column]==1):
                     terrainMap = self.resetSubMatrix(terrainMap,(row,column),radius)
-                    numberSensorsUse += 1
+                    sensorsNumberUse += 1
 
-        return (terrainMap,numberSensorsUse)
+        return (terrainMap,sensorsNumberUse)
 
 
     def heuristicSwap(self,positionMap,radius):
@@ -290,7 +290,7 @@ class Main:
         return newPositionMap
 
 
-    def checkMaxSensors(self,positionMap,numberSensors):
+    def checkMaxSensors(self,positionMap,sensorsNumber):
         sensosrsPosition =[]
         lenPosition = len(positionMap)
         for row in range(lenPosition):
@@ -298,7 +298,7 @@ class Main:
                 if( positionMap[row][column] == 1):
                     sensosrsPosition.append((row,column))
 
-        while len(sensosrsPosition) > numberSensors:
+        while len(sensosrsPosition) > sensorsNumber:
             index = self.getRandomNumber(0, len(sensosrsPosition))
             (row,column) = sensosrsPosition.pop(index)
             positionMap[row][column] = 0
@@ -306,7 +306,7 @@ class Main:
         return positionMap
 
 
-    def VNS(self,positionMap,coefficient,originalMap,radius,numberSensors):
+    def VNS(self,positionMap,coefficient,originalMap,radius,sensorsNumber):
         
         currentTerrainMap = copy.deepcopy(originalMap)
         currentPositionMap = copy.deepcopy(positionMap)
@@ -315,19 +315,19 @@ class Main:
         bestPositionMap = copy.deepcopy(currentPositionMap)
         heuristics = [self.heuristicSwap,self.heuristicCopy]
         k = 0
-        while k <= 1:
+        while k < len(heuristics):
             shakedPositionMap = heuristics[k](currentPositionMap,radius)
-            shakedPositionMap = self.checkMaxSensors(shakedPositionMap,numberSensors)
+            shakedPositionMap = self.checkMaxSensors(shakedPositionMap,sensorsNumber)
 
             newPositionMap = heuristics[k](shakedPositionMap,radius)
-            newPositionMap = self.checkMaxSensors(newPositionMap,numberSensors)
+            newPositionMap = self.checkMaxSensors(newPositionMap,sensorsNumber)
           
             currentTerrainMap = copy.deepcopy(originalMap)
-            (currentTerrainMap,numberSensorsUse) = self.markPositionsInAMatrix(newPositionMap,currentTerrainMap,radius)
+            (currentTerrainMap,sensorsNumberUse) = self.markPositionsInAMatrix(newPositionMap,currentTerrainMap,radius)
       
 
             sumMap = self.getMatrixSum(currentTerrainMap)
-            newCoefficient = sumMap/numberSensorsUse
+            newCoefficient = sumMap/sensorsNumberUse
             if newCoefficient < coefficient:
                 currentPositionMap = copy.deepcopy(newPositionMap)
                 bestPositionMap = copy.deepcopy(newPositionMap)
@@ -397,7 +397,7 @@ class Main:
     def main(self):
         argv = sys.argv
         filename = argv[1]
-        numberSensors = int(argv[2])
+        sensorsNumber = int(argv[2])
         radius = int(argv[3])
       
         limit = 1000 
@@ -414,9 +414,9 @@ class Main:
             secound=self.getRandomNumber(0,round(time()))
             seed = round(time()*10000)+secound
             self.randomFunction = Generator(PCG64(seed))
-            (coefficient,positionMap,currentTerrainMap) = self.GRASP(terrainMap,numberSensors,radius,alpha,limit)
+            (coefficient,positionMap,currentTerrainMap) = self.GRASP(terrainMap,sensorsNumber,radius,alpha,limit)
 
-            (coefficientVNS,positionMapVNS,currentTerrainMapVNS) = self.VNS(positionMap,coefficient,terrainMap,radius,numberSensors)
+            (coefficientVNS,positionMapVNS,currentTerrainMapVNS) = self.VNS(positionMap,coefficient,terrainMap,radius,sensorsNumber)
 
             if(coefficientVNS < coefficient):
                 coefficient = coefficientVNS
